@@ -1,4 +1,4 @@
-from tkinter import Frame
+from tkinter import E, Frame
 import cv2
 import pyrealsense2 as rs
 from realsense import RSCamera
@@ -51,9 +51,9 @@ cam = RSCamera()
 
 # To flip the image, modify the flip_method parameter (0 and 2 are the most common)
 # print(gstreamer_pipeline(flip_method=0))
-cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
+# cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
 #cap = cv2.VideoCapture(1)
-if cap.isOpened():
+try:
     #window_handle = cv2.namedWindow("CSI Camera", cv2.WINDOW_AUTOSIZE)
     # Window
     while True:
@@ -79,5 +79,5 @@ if cap.isOpened():
 
     # cap.release()
     # cv2.destroyAllWindows()
-else:
-    print("Unable to open camera")
+except Exception as e:
+    print(e)
