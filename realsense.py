@@ -5,9 +5,11 @@ import numpy as np
 class RSCamera:
     def __init__(self):
         self.pipeline = rs.pipeline()
+        self.width = 640
+        self.height = 480
         config = rs.config()
-        config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
-        config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
+        config.enable_stream(rs.stream.color, self.width, self.height, rs.format.bgr8, 30)
+        config.enable_stream(rs.stream.depth, self.width, self.height, rs.format.z16, 30)
 
         self.pipeline.start(config)
         sensor = self.pipeline.get_active_profile(
