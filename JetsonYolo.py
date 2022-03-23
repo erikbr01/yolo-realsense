@@ -2,8 +2,10 @@ from tkinter import E, Frame
 import cv2
 import pyrealsense2 as rs
 from realsense import RSCamera
+import keyboard
 import numpy as np
 from elements.yolo import OBJ_DETECTION
+
 
 Object_classes = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
                   'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow',
@@ -29,6 +31,10 @@ try:
     #window_handle = cv2.namedWindow("CSI Camera", cv2.WINDOW_AUTOSIZE)
     # Window
     while True:
+
+        if keyboard.is_pressed('q'):
+            break
+
         frame, depth = cam.get_frames()
 
         # detection process
