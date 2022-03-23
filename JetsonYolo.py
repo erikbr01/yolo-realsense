@@ -47,11 +47,11 @@ try:
                 xmin, ymin), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 1, cv2.LINE_AA)
             output.write(frame)
         # cv2.imshow("CSI Camera", frame)
-        # keyCode = cv2.waitKey(30)
-        # if keyCode == ord('q'):
-        #     break
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
     # cap.release()
     # cv2.destroyAllWindows()
+    output.release()
 except Exception as e:
     print(e)
