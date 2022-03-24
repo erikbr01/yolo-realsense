@@ -29,7 +29,6 @@ output = cv2.VideoWriter('output.avi', cv2.VideoWriter_fourcc(
 try:
     #window_handle = cv2.namedWindow("CSI Camera", cv2.WINDOW_AUTOSIZE)
     # Window
-    listener.start()
     while True:
 
         if keyboard.is_pressed('q'):
