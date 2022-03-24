@@ -2,21 +2,9 @@ from tkinter import E, Frame
 import cv2
 import pyrealsense2 as rs
 from realsense import RSCamera
-from pynput import keyboard
 import numpy as np
 from elements.yolo import OBJ_DETECTION
 
-
-def on_press(key):
-    try:
-        print('Alphanumeric key pressed: {0} '.format(
-            key.char))
-    except AttributeError:
-        print('special key pressed: {0}'.format(
-            key))
-
-
-listener = keyboard.Listener(on_press=on_press)
 
 Object_classes = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
                   'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow',
@@ -71,6 +59,6 @@ try:
     # cap.release()
     # cv2.destroyAllWindows()
     output.release()
-    listener.join()
-except Exception as e:
-    print(e)
+
+except KeyboardInterrupt as e:
+    output.release()
