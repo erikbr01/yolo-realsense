@@ -22,7 +22,7 @@ Object_detector = OBJ_DETECTION('weights/yolov5s.pt', Object_classes)
 cam = RSCamera()
 
 output = cv2.VideoWriter('output.avi', cv2.VideoWriter_fourcc(
-    'M', 'J', 'P', 'G'), 10, (cam.height, cam.width))
+    'M', 'J', 'P', 'G'), 10, (cam.width, cam.height))
 
 # cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
 #cap = cv2.VideoCapture(1)
