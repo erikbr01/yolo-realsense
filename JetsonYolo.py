@@ -31,9 +31,6 @@ try:
     # Window
     while True:
 
-        if keyboard.is_pressed('q'):
-            break
-
         frame, depth = cam.get_frames()
 
         # detection process
