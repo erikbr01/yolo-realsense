@@ -6,6 +6,8 @@ import numpy as np
 from elements.yolo import OBJ_DETECTION
 
 
+WEIGHTS = 'weights/yolov5l.pt'
+
 Object_classes = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
                   'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow',
                   'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
@@ -17,7 +19,9 @@ Object_classes = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', '
                   'hair drier', 'toothbrush']
 
 Object_colors = list(np.random.rand(80, 3)*255)
-Object_detector = OBJ_DETECTION('weights/yolov5s.pt', Object_classes)
+Object_detector = OBJ_DETECTION(WEIGHTS, Object_classes)
+
+print(f'Using {WEIGHTS}')
 
 cam = RSCamera()
 
