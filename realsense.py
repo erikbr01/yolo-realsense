@@ -22,11 +22,29 @@ class RSCamera:
         image_sensor.set_option(rs.option.enable_auto_exposure, True)
         print("depth scale is" + str(self.depth_scale))
 
-    def get_frames(self):
+    def get_raw_frames(self):
         frames = self.pipeline.wait_for_frames()
 
         depth = np.asanyarray(frames.get_depth_frame().get_data())
         color = np.asanyarray(frames.get_color_frame().get_data())
+
+        return (color, depth)
+
+    def get_rs_frames(self):
+        frames = self.pipeline.wait_for_frames()
+
+        depth = frames.get_depth_frame()
+        color = frames.get_color_frame()
+
+    def get_color_aligned_frames(self):
+        frames = self.pipeline.wait_for_frames()
+
+        align_to = rs.stream.color
+        align = rs.align(align_to)
+        aligned_frames = align.process(frames)
+
+        depth = np.asanyarray(aligned_frames.get_depth_frame().get_data())
+        color = np.asanyarray(aligned_frames.get_color_frame().get_data())
 
         return (color, depth)
 

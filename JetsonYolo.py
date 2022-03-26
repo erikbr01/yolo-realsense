@@ -13,7 +13,7 @@ import math
 class Detector:
     def __init__(self, weight_file) -> None:
         self.RECORD_COUNTER = self.get_record_counter('counter')
-        self.OBJECT_LOG_NAME = 'bottle'
+        self.OBJECT_LOG_NAME = 'person'
         self.LOGFILE = f"logs/records_{self.OBJECT_LOG_NAME}_{self.RECORD_COUNTER}.csv"
         self.VIDEOFILE = f'videos/output_{self.OBJECT_LOG_NAME}_{self.RECORD_COUNTER}.avi'
         self.WEIGHTS = weight_file
@@ -60,7 +60,8 @@ class Detector:
 
         try:
             while True:
-                frame, depth_frame = cam.get_frames()
+                frame, depth_frame = cam.get_raw_frames()
+                # frame, depth_frame = cam.get_color_aligned_frames()
 
                 # detection process
                 objs = object_detector.detect(frame)
@@ -71,7 +72,7 @@ class Detector:
 
                 # plotting
                 for obj in objs:
-                    print(obj)
+                    # print(obj)
                     label = obj['label']
                     score = obj['score']
                     [(xmin, ymin), (xmax, ymax)] = obj['bbox']
@@ -84,7 +85,7 @@ class Detector:
                     depth = depth_frame[int(center_y), int(
                         center_x)].astype(float)
                     distance = depth * cam.depth_scale
-
+                    print(label + ' ' + str(self.truncate(distance, 2)) + 'm')
                     # Create bounding box around object
                     frame = cv2.rectangle(
                         frame, (xmin, ymin), (xmax, ymax), color, 2)
