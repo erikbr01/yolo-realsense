@@ -36,7 +36,7 @@ class RSCamera:
         depth = frames.get_depth_frame()
         color = frames.get_color_frame()
 
-    def get_color_aligned_frames(self):
+    def get_raw_color_aligned_frames(self):
         frames = self.pipeline.wait_for_frames()
 
         align_to = rs.stream.color
@@ -47,6 +47,18 @@ class RSCamera:
         color = np.asanyarray(aligned_frames.get_color_frame().get_data())
 
         return (color, depth)
+
+    def get_rs_color_aligned_frames(self):
+        frames = self.pipeline.wait_for_frames()
+
+        align_to = rs.stream.color
+        align = rs.align(align_to)
+        aligned_frames = align.process(frames)
+
+        return (aligned_frames.get_color_frame(), aligned_frames.get_depth_frame())
+
+    def deproject(self, intrinsics, x, y, depth):
+        return rs.rs2_deproject_pixel_to_point(intrinsics, [x, y], depth)
 
     def release(self):
         self.pipeline.stop()

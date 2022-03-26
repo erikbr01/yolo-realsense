@@ -60,10 +60,16 @@ class Detector:
 
         try:
             while True:
-                frame, depth_frame = cam.get_raw_frames()
-                # frame, depth_frame = cam.get_color_aligned_frames()
+                #frame, depth_frame = cam.get_raw_frames()
+                frame, depth_frame = cam.get_rs_color_aligned_frames()
 
+                # We aligh depth to color, so we should use the color frame intrinsics
+                cam_intrinsics = frame.profile.as_video_stream_profile().intrinsics
                 # detection process
+                frame = np.asanyarray(
+                    frame.get_data())
+                depth_frame = np.asanyarray(
+                    depth_frame.get_data())
                 objs = object_detector.detect(frame)
 
                 elapsed_time = time.time() - starting_time
@@ -86,17 +92,22 @@ class Detector:
                         center_x)].astype(float)
                     distance = depth * cam.depth_scale
                     print(label + ' ' + str(self.truncate(distance, 2)) + 'm')
+
+                    # Get translation vector relative to the camera frame
+                    tvec = cam.deproject(
+                        cam_intrinsics, center_x, center_y, distance)
+
                     # Create bounding box around object
                     frame = cv2.rectangle(
                         frame, (xmin, ymin), (xmax, ymax), color, 2)
 
                     # Put label and confidence on bounding box
-                    frame = cv2.putText(frame, f'{label} P:({str(score)}) z: {str(self.truncate(distance, 2))}', (
+                    frame = cv2.putText(frame, f'{label} P:({str(score)}) z: {str(self.truncate(tvec[2], 2))}', (
                         xmin, ymin), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 1, cv2.LINE_AA)
 
                     if label == self.OBJECT_LOG_NAME:
                         self.logger.record_value([np.array(
-                            [center_x, center_y, distance, elapsed_time, score, label]), ])
+                            [tvec[0], tvec[1], tvec[2], elapsed_time, score, label]), ])
 
                 # Write resulting frame to output
                 output.write(frame)
