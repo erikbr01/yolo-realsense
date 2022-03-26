@@ -4,7 +4,9 @@ import matplotlib.pyplot as plt
 
 
 class DataAnalyzer:
-    def __init__(self, input_location):
+    def __init__(self, input_location, dims):
+        self.x_lim = dims[0]
+        self.y_lim = dims[1]
         self.df = pd.read_csv(input_location)
         self.avg_fps = 0
         self.avg_position = (0, 0)
@@ -35,7 +37,17 @@ class DataAnalyzer:
         ax.set_ylabel('fps')
         plt.show()
 
-    def visualize3D(self, input_location):
+    def visualize_axis_raw(self, axis):
+        data = self.df[axis].to_numpy()
+        timesteps = np.linspace(0, data.size - 1, data.size)
+        fig = plt.figure()
+        ax = fig.add_subplot()
+        plt.scatter(timesteps, data, c='blue')
+        ax.set_xlabel('timestep')
+        ax.set_ylabel(axis)
+        plt.show()
+
+    def visualize3D(self):
         x_vec = self.df['x'].to_numpy()
         y_vec = self.df['y'].to_numpy()
         z_vec = self.df['z'].to_numpy()
@@ -44,15 +56,17 @@ class DataAnalyzer:
         ax = fig.add_subplot(projection='3d')
 
         for i in range(0, len(x_vec)):
-            ax.scatter(x_vec[i], y_vec[i], z_vec[i], c='blue')
+            # swap y and z axis in visualisation
+            ax.scatter(x_vec[i], z_vec[i], y_vec[i], c='blue')
 
         ax.set_xlabel('x')
-        ax.set_ylabel('y')
-        ax.set_zlabel('z')
+        ax.set_ylabel('z')
+        ax.set_zlabel('y')
 
-        # Assume capture dimenstions are 1920x1080
-        ax.set_xlim((0, 1920))
-        ax.set_ylim((0, 1080))
+        z_lim = np.max(z_vec)
+        ax.set_xlim((0, self.x_lim))
+        ax.set_ylim((0, z_lim))
+        ax.set_zlim((0, self.y_lim))
 
         plt.show()
 
@@ -69,15 +83,17 @@ class DataAnalyzer:
         ax.set_xlabel('x')
         ax.set_ylabel('y')
 
-        # Assume capture dimenstions are 1920x1080
-        ax.set_xlim((0, 1920))
-        ax.set_ylim((0, 1080))
+        ax.set_xlim((0, self.x_lim))
+        ax.set_ylim((0, self.y_lim))
 
         plt.show()
 
 
 if __name__ == '__main__':
-    vis = DataAnalyzer('logs/bottle_realsense_yolov5.csv')
+    vis = DataAnalyzer(
+        'logs/bottle_realsense_yolov5_constant_depth_far.csv', (480, 640))
     vis.add_fps_to_df()
-    vis.visualize_fps_raw()
+    # vis.visualize_fps_raw()
     # vis.visualize2D()
+    # vis.visualize3D()
+    vis.visualize_axis_raw('z')
