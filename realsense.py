@@ -8,13 +8,19 @@ class RSCamera:
         self.width = 640
         self.height = 480
         config = rs.config()
-        config.enable_stream(rs.stream.color, self.width, self.height, rs.format.bgr8, 30)
-        config.enable_stream(rs.stream.depth, self.width, self.height, rs.format.z16, 30)
+        config.enable_stream(rs.stream.color, self.width,
+                             self.height, rs.format.bgr8, 30)
+        config.enable_stream(rs.stream.depth, self.width,
+                             self.height, rs.format.z16, 30)
 
-        self.pipeline.start(config)
-        sensor = self.pipeline.get_active_profile(
-        ).get_device().query_sensors()[1]
-        sensor.set_option(rs.option.enable_auto_exposure, True)
+        profile = self.pipeline.start(config)
+
+        depth_sensor = profile.get_device().first_depth_sensor()
+        image_sensor = profile.get_device().query_sensors()[1]
+
+        self.depth_scale = depth_sensor.get_depth_scale()
+        image_sensor.set_option(rs.option.enable_auto_exposure, True)
+        print("depth scale is" + str(self.depth_scale))
 
     def get_frames(self):
         frames = self.pipeline.wait_for_frames()
@@ -26,4 +32,3 @@ class RSCamera:
 
     def release(self):
         self.pipeline.stop()
-

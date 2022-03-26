@@ -7,6 +7,7 @@ from elements.yolo import OBJ_DETECTION
 from logger import Logger
 import time
 from classes import coco
+import math
 
 
 class Detector:
@@ -23,6 +24,10 @@ class Detector:
 
         self.logger = Logger()
         self.records = np.empty((0, self.logger.cols))
+
+    def truncate(self, number, digits) -> float:
+        stepper = 10.0 ** digits
+        return math.trunc(stepper * number) / stepper
 
     def get_record_counter(self, file):
         # Determine the record counter
@@ -55,7 +60,7 @@ class Detector:
 
         try:
             while True:
-                frame, depth = cam.get_frames()
+                frame, depth_frame = cam.get_frames()
 
                 # detection process
                 objs = object_detector.detect(frame)
@@ -73,20 +78,24 @@ class Detector:
                     color = self.object_colors[self.object_classes.index(
                         label)]
 
-                    center_x = (xmax - xmin)/2
-                    center_y = (ymax - ymin)/2
+                    center_x = (xmax - xmin)/2 + xmin
+                    center_y = (ymax - ymin)/2 + ymin
+
+                    depth = depth_frame[int(center_y), int(
+                        center_x)].astype(float)
+                    distance = depth * cam.depth_scale
 
                     # Create bounding box around object
                     frame = cv2.rectangle(
                         frame, (xmin, ymin), (xmax, ymax), color, 2)
 
                     # Put label and confidence on bounding box
-                    frame = cv2.putText(frame, f'{label} ({str(score)})', (
+                    frame = cv2.putText(frame, f'{label} P:({str(score)}) z: {str(self.truncate(distance, 2))}', (
                         xmin, ymin), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 1, cv2.LINE_AA)
 
                     if label == self.OBJECT_LOG_NAME:
                         self.logger.record_value([np.array(
-                            [center_x, center_y, 0, elapsed_time, score, label]), ])
+                            [center_x, center_y, distance, elapsed_time, score, label]), ])
 
                 # Write resulting frame to output
                 output.write(frame)
