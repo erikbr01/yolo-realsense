@@ -5,6 +5,8 @@ from realsense import RSCamera
 import numpy as np
 from elements.yolo import OBJ_DETECTION
 from logger import Logger
+import time
+from classes import coco
 
 
 class Detector:
@@ -12,21 +14,15 @@ class Detector:
         self.RECORD_COUNTER = self.get_record_counter('counter')
         self.OBJECT_LOG_NAME = 'bottle'
         self.LOGFILE = f"logs/records_{self.OBJECT_LOG_NAME}_{self.RECORD_COUNTER}.csv"
+        self.VIDEOFILE = f'videos/output_{self.OBJECT_LOG_NAME}_{self.RECORD_COUNTER}.avi'
         self.WEIGHTS = weight_file
 
-        self.object_classes = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
-                               'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow',
-                               'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
-                               'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove', 'skateboard', 'surfboard',
-                               'tennis racket', 'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple',
-                               'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
-                               'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote', 'keyboard', 'cell phone',
-                               'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear',
-                               'hair drier', 'toothbrush']
+        self.object_classes = coco
 
         self.object_colors = list(np.random.rand(80, 3)*255)
 
         self.logger = Logger()
+        self.records = np.empty((0, self.logger.cols))
 
     def get_record_counter(self, file):
         # Determine the record counter
@@ -51,8 +47,11 @@ class Detector:
 
         cam = RSCamera()
 
-        output = cv2.VideoWriter('output.avi', cv2.VideoWriter_fourcc(
+        output = cv2.VideoWriter(self.VIDEOFILE, cv2.VideoWriter_fourcc(
             'M', 'J', 'P', 'G'), 10, (cam.width, cam.height))
+
+        starting_time = time.time()
+        frame_counter = 0
 
         try:
             while True:
@@ -60,6 +59,10 @@ class Detector:
 
                 # detection process
                 objs = object_detector.detect(frame)
+
+                elapsed_time = time.time() - starting_time
+                frame_counter += 1
+                # fps = frame_counter/elapsed_time
 
                 # plotting
                 for obj in objs:
@@ -70,11 +73,30 @@ class Detector:
                     color = self.object_colors[self.object_classes.index(
                         label)]
 
+                    center_x = (xmax - xmin)/2
+                    center_y = (ymax - ymin)/2
+
+                    # Create bounding box around object
                     frame = cv2.rectangle(
                         frame, (xmin, ymin), (xmax, ymax), color, 2)
+
+                    # Put label and confidence on bounding box
                     frame = cv2.putText(frame, f'{label} ({str(score)})', (
                         xmin, ymin), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 1, cv2.LINE_AA)
-                    output.write(frame)
+
+                    if label == self.OBJECT_LOG_NAME:
+                        self.logger.record_value([np.array(
+                            [center_x, center_y, 0, elapsed_time, score, label]), ])
+
+                # Write resulting frame to output
+                output.write(frame)
 
         except KeyboardInterrupt as e:
             output.release()
+            cam.release()
+            self.logger.export_to_csv(self.LOGFILE)
+
+
+if __name__ == '__main__':
+    det = Detector('weights/yolov5s.pt')
+    det.detect_objects()

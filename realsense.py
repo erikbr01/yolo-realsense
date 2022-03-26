@@ -23,3 +23,7 @@ class RSCamera:
         color = np.asanyarray(frames.get_color_frame().get_data())
 
         return (color, depth)
+
+    def release(self):
+        self.pipeline.stop()
+

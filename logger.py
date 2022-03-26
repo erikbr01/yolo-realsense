@@ -4,7 +4,8 @@ import pandas as pd
 class Logger:
     def __init__(self) -> None:
         # Store (x,y,z,t, confidence, class) in here
-        self.records = np.empty((0,6))
+        self.cols = 6
+        self.records = np.empty((0,self.cols))
 
 
     def record_value(self, record):
