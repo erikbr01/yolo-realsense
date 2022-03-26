@@ -34,7 +34,7 @@ class DataAnalyzer:
         ax = fig.add_subplot()
         plt.scatter(timesteps, fps, c='blue')
         ax.set_xlabel('frames')
-        ax.set_ylabel('fps')
+        ax.set_ylabel('fps [1/s]')
         plt.show()
 
     def visualize_axis_raw(self, axis):
@@ -47,7 +47,7 @@ class DataAnalyzer:
         ax.set_ylabel(axis)
         plt.show()
 
-    def visualize3D(self):
+    def visualize_3d_pixels(self):
         x_vec = self.df['x'].to_numpy()
         y_vec = self.df['y'].to_numpy()
         z_vec = self.df['z'].to_numpy()
@@ -59,9 +59,9 @@ class DataAnalyzer:
             # swap y and z axis in visualisation
             ax.scatter(x_vec[i], z_vec[i], y_vec[i], c='blue')
 
-        ax.set_xlabel('x')
-        ax.set_ylabel('z')
-        ax.set_zlabel('y')
+        ax.set_xlabel('x [m]')
+        ax.set_ylabel('z [m]')
+        ax.set_zlabel('y [m]')
 
         z_lim = np.max(z_vec)
         ax.set_xlim((0, self.x_lim))
@@ -70,7 +70,33 @@ class DataAnalyzer:
 
         plt.show()
 
-    def visualize2D(self):
+    def visualize_3d_meters(self):
+        x_vec = self.df['x'].to_numpy()
+        y_vec = self.df['y'].to_numpy()
+        z_vec = self.df['z'].to_numpy()
+
+        fig = plt.figure()
+        ax = fig.add_subplot(projection='3d')
+
+        for i in range(0, len(x_vec)):
+            # swap y and z axis in visualisation
+            ax.scatter(x_vec[i], z_vec[i], y_vec[i], c='blue')
+
+        ax.set_xlabel('x [m]')
+        ax.set_ylabel('z [m]')
+        ax.set_zlabel('y [m]')
+
+        x_lim = (np.min(x_vec), np.max(x_vec))
+        y_lim = (np.min(z_vec), np.max(z_vec))
+        z_lim = (np.min(y_vec), np.max(y_vec))
+
+        ax.set_xlim((x_lim[0], x_lim[1]))
+        ax.set_zlim((z_lim[0], z_lim[1]))
+        ax.set_ylim((y_lim[0], y_lim[1]))
+
+        plt.show()
+
+    def visualize_2D_pixels(self):
         x_vec = self.df['x'].to_numpy()
         y_vec = self.df['y'].to_numpy()
 
@@ -80,8 +106,8 @@ class DataAnalyzer:
         for i in range(0, len(x_vec)):
             ax.scatter(x_vec[i], y_vec[i], c='blue')
 
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
+        ax.set_xlabel('x [m]')
+        ax.set_ylabel('y [m]')
 
         ax.set_xlim((0, self.x_lim))
         ax.set_ylim((0, self.y_lim))
@@ -91,9 +117,8 @@ class DataAnalyzer:
 
 if __name__ == '__main__':
     vis = DataAnalyzer(
-        'logs/bottle_realsense_yolov5_constant_depth_far.csv', (480, 640))
-    vis.add_fps_to_df()
+        'logs/person_deprojected_3.csv', (480, 640))
+    # vis.add_fps_to_df()
     # vis.visualize_fps_raw()
-    # vis.visualize2D()
-    # vis.visualize3D()
-    vis.visualize_axis_raw('z')
+    vis.visualize_3d_meters()
+    # vis.visualize_axis_raw('y')
