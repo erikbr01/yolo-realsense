@@ -1,8 +1,9 @@
-# Yolo Object Detection on NVIDIA Jetson Nano 
+# Yolo Object Detection and Localization with Intel Realsense Cameras
 
-This repository provides a simple and easy process for camera installation, software and hardware setup, and object detection using Yolov5 and openCV on NVIDIA Jetson Nano.
-This project uses [**CSI-Camera**](https://github.com/JetsonHacksNano/CSI-Camera) to create pipeline and capture frames from the CSI camera, and [**Yolov5**](https://github.com/ultralytics/yolov5) to detect objects, implementing a complete and executable code on Jetson Development Kits.
-Check out [**CodePlay jetson nano youtube playlist**](https://www.youtube.com/watch?v=-A_CDLtQig4&list=PLZIi3Od9VUwW49q6T1VjShktoOgrDi3O4&index=3) and [**Medium article**](https://towardsdatascience.com/yolov5-object-detection-on-nvidia-jetson-nano-148cfa21a024) for more info. 
+This repository is building up on the work of [this repository](https://github.com/amirhosseinh77/JetsonYolo) which provides code to run yolov5 using pytorch.
+
+I am building up on this work to enable real time object detection *and localization* by deprojecting 2D points from the image to 3D points relative to the camera frame using an Intel Realsense D455 camera. This code will be used for aerial grasping for the [RAPTOR project](https://github.com/raptor-ethz). 
+
 
 ## Download Model
 Select the desired model based on model size, required speed, and accuracy.
@@ -11,23 +12,6 @@ Download the model using the command below and move it to the **weights** folder
 ```
 $ cd weights
 $ wget https://github.com/ultralytics/yolov5/releases/download/v5.0/yolov5s.pt
-```
-
-## Requirements
-These steps are essential for software and hardware configuration.
-#### Camera Setup
-Install the camera in the MIPI-CSI Camera Connector on the carrier board.
-The pins on the camera ribbon should face the Jetson Nano module.
-You can use this [**camera setup guide**](https://www.arducam.com/docs/camera-for-jetson-nano/native-jetson-cameras-imx219-imx477/imx477/) for more info.
-
-#### Camera Driver
-By default, NVIDIA JetPack supports several cameras with different sensors, one of the most famous of which is the Raspberry Pi camera v2.
-But if you use other cameras, you need to install a sensor driver.
-A 12.3 MP camera with an IMX477-160 sensor is used in this project which requires an additional driver to connect. 
-Check out [**Arducam IMX477 driver**](https://www.arducam.com/docs/camera-for-jetson-nano/native-jetson-cameras-imx219-imx477/imx477-how-to-install-the-driver/) and their installation guide if you have the same camera sensor.
-Use the following command to check if the camera is recognized correctly.
-```
-$ ls /dev/video0
 ```
 
 ##### PyTorch & torchvision
