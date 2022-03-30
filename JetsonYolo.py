@@ -1,6 +1,4 @@
-from tkinter import E, Frame
 import cv2
-import pyrealsense2 as rs
 from realsense import RSCamera
 import numpy as np
 from elements.yolo import OBJ_DETECTION
@@ -46,7 +44,7 @@ class Detector:
 
         return ret
 
-    def detect_objects(self):
+    def detect_objects_cont(self):
 
         object_detector = OBJ_DETECTION(self.WEIGHTS, self.object_classes)
 
@@ -117,7 +115,69 @@ class Detector:
             cam.release()
             self.logger.export_to_csv(self.LOGFILE)
 
+    def find_objects(self, cam, object_detector, starting_time, target_object_name):
+
+        object_detector = OBJ_DETECTION(self.WEIGHTS, self.object_classes)
+
+        cam = RSCamera()
+
+        output = cv2.VideoWriter(self.VIDEOFILE, cv2.VideoWriter_fourcc(
+            'M', 'J', 'P', 'G'), 10, (cam.width, cam.height))
+
+        starting_time = time.time()
+        frame_counter = 0
+
+        #frame, depth_frame = cam.get_raw_frames()
+        frame, depth_frame = cam.get_rs_color_aligned_frames()
+
+        # We aligh depth to color, so we should use the color frame intrinsics
+        cam_intrinsics = frame.profile.as_video_stream_profile().intrinsics
+        # detection process
+        frame = np.asanyarray(
+            frame.get_data())
+        depth_frame = np.asanyarray(
+            depth_frame.get_data())
+        objs = object_detector.detect(frame)
+
+        elapsed_time = time.time() - starting_time
+        frame_counter += 1
+        # fps = frame_counter/elapsed_time
+
+        # plotting
+        for obj in objs:
+            # print(obj)
+            label = obj['label']
+            score = obj['score']
+            [(xmin, ymin), (xmax, ymax)] = obj['bbox']
+            color = self.object_colors[self.object_classes.index(
+                label)]
+
+            center_x = (xmax - xmin)/2 + xmin
+            center_y = (ymax - ymin)/2 + ymin
+
+            depth = depth_frame[int(center_y), int(
+                center_x)].astype(float)
+            distance = depth * cam.depth_scale
+            print(label + ' ' + str(self.truncate(distance, 2)) + 'm')
+
+            # Get translation vector relative to the camera frame
+            tvec = cam.deproject(
+                cam_intrinsics, center_x, center_y, distance)
+
+            # Create bounding box around object
+            frame = cv2.rectangle(
+                frame, (xmin, ymin), (xmax, ymax), color, 2)
+
+            # Put label and confidence on bounding box
+            frame = cv2.putText(frame, f'{label} P:({str(score)}) z: {str(self.truncate(tvec[2], 2))}', (
+                xmin, ymin), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 1, cv2.LINE_AA)
+
+            if label == self.OBJECT_LOG_NAME:
+                self.logger.record_value([np.array(
+                    [tvec[0], tvec[1], tvec[2], elapsed_time, score, label]), ])
+                return frame, tvec, elapsed_time, score
+
 
 if __name__ == '__main__':
     det = Detector('weights/yolov5s.pt')
-    det.detect_objects()
+    det.detect_objects_cont()

@@ -20,7 +20,6 @@ class RSCamera:
 
         self.depth_scale = depth_sensor.get_depth_scale()
         image_sensor.set_option(rs.option.enable_auto_exposure, True)
-        print("depth scale is" + str(self.depth_scale))
 
     def get_raw_frames(self):
         frames = self.pipeline.wait_for_frames()
