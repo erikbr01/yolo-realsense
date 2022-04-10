@@ -8,7 +8,10 @@ from classes import coco
 import math
 import zmq
 import detection_msg_pb2
-import google.protobuf
+
+OBJ_THRESH = .6
+P_THRESH = .3
+NMS_THRESH = .5
 
 
 class Detector:
@@ -66,9 +69,11 @@ class Detector:
 
         starting_time = time.time()
         frame_counter = 0
+        elapsed_time = 0
 
         try:
             while True:
+
                 #frame, depth_frame = cam.get_raw_frames()
                 frame, depth_frame = cam.get_rs_color_aligned_frames()
 
@@ -79,11 +84,25 @@ class Detector:
                     frame.get_data())
                 depth_frame = np.asanyarray(
                     depth_frame.get_data())
-                objs = object_detector.detect(frame)
 
-                elapsed_time = time.time() - starting_time
-                frame_counter += 1
-                # fps = frame_counter/elapsed_time
+                perform_detection = frame_counter % 5 == 0
+                if perform_detection:
+                    objs = object_detector.detect(frame)
+                    mtracker = cv2.legacy.MultiTracker_create()
+                    for obj in objs:
+                        [(xmin, ymin), (xmax, ymax)] = obj['bbox']
+                        w = xmax - xmin
+                        h = ymax - ymax
+                        mtracker.add(cv2.legacy.TrackerMedianFlow_create(),
+                                     frame, (xmin, ymin, w, h))
+                else:
+                    is_tracking, bboxes = mtracker.update(frame)
+                    if is_tracking:
+                        for i, bbox in enumerate(bboxes):
+                            xmin, ymin, w, h = [int(val) for val in bbox]
+                            xmax = xmin + w
+                            ymax = ymin + h
+                            objs[i]['bbox'] = [(xmin, ymin), (xmax, ymax)]
 
                 # plotting
                 for obj in objs:
@@ -115,6 +134,7 @@ class Detector:
                     frame = cv2.putText(frame, f'{label} P:({str(score)}) z: {str(self.truncate(tvec[2], 2))}', (
                         xmin, ymin), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 1, cv2.LINE_AA)
 
+                    # Store log and send ZMQ message
                     if label == target_object:
                         self.logger.record_value([np.array(
                             [tvec[0], tvec[1], tvec[2], elapsed_time, score, label]), ])
@@ -125,11 +145,17 @@ class Detector:
                         msg.z = tvec[2]
                         msg.label = label
                         msg.confidence = score
-                        serial_msg = msg.SerializeToString()
-                        self.socket.send(serial_msg)
-                        _ = self.socket.recv()
+                        # serial_msg = msg.SerializeToString()
+                        # # We send in a req, rep scheme, so we have to send and then get a reply
+                        # self.socket.send(serial_msg)
+                        # _ = self.socket.recv()
+
                 # Write resulting frame to output
                 output.write(frame)
+
+                elapsed_time = time.time() - starting_time
+                frame_counter += 1
+                # fps = frame_counter/elapsed_time
 
         except KeyboardInterrupt as e:
             output.release()
