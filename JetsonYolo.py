@@ -6,15 +6,21 @@ from logger import Logger
 import time
 from classes import coco
 import math
+import zmq
+import detection_msg_pb2
+import google.protobuf
 
 
 class Detector:
     def __init__(self, weight_file) -> None:
         self.RECORD_COUNTER = self.get_record_counter('counter')
-        self.OBJECT_LOG_NAME = 'person'
-        self.LOGFILE = f"logs/records_{self.OBJECT_LOG_NAME}_{self.RECORD_COUNTER}.csv"
-        self.VIDEOFILE = f'videos/output_{self.OBJECT_LOG_NAME}_{self.RECORD_COUNTER}.avi'
+        self.LOG_NAME = 'testing'
+
+        self.LOGFILE = f"logs/records_{self.LOG_NAME}_{self.RECORD_COUNTER}.csv"
+        self.VIDEO_OUT_FILE = f'videos/output_{self.LOG_NAME}_{self.RECORD_COUNTER}.avi'
         self.WEIGHTS = weight_file
+
+        self.ZMQ_SOCKET_ADDR = "tcp://localhost:5555"
 
         self.object_classes = coco
 
@@ -22,6 +28,11 @@ class Detector:
 
         self.logger = Logger()
         self.records = np.empty((0, self.logger.cols))
+
+        # Initalize ZMQ connection
+        context = zmq.Context()
+        self.socket = context.socket(zmq.REQ)
+        self.socket.connect(self.ZMQ_SOCKET_ADDR)
 
     def truncate(self, number, digits) -> float:
         stepper = 10.0 ** digits
@@ -44,13 +55,13 @@ class Detector:
 
         return ret
 
-    def detect_objects_cont(self):
+    def detect_objects_cont(self, target_object):
 
         object_detector = OBJ_DETECTION(self.WEIGHTS, self.object_classes)
 
         cam = RSCamera()
 
-        output = cv2.VideoWriter(self.VIDEOFILE, cv2.VideoWriter_fourcc(
+        output = cv2.VideoWriter(self.VIDEO_OUT_FILE, cv2.VideoWriter_fourcc(
             'M', 'J', 'P', 'G'), 10, (cam.width, cam.height))
 
         starting_time = time.time()
@@ -89,6 +100,7 @@ class Detector:
                     depth = depth_frame[int(center_y), int(
                         center_x)].astype(float)
                     distance = depth * cam.depth_scale
+
                     print(label + ' ' + str(self.truncate(distance, 2)) + 'm')
 
                     # Get translation vector relative to the camera frame
@@ -103,10 +115,19 @@ class Detector:
                     frame = cv2.putText(frame, f'{label} P:({str(score)}) z: {str(self.truncate(tvec[2], 2))}', (
                         xmin, ymin), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 1, cv2.LINE_AA)
 
-                    if label == self.OBJECT_LOG_NAME:
+                    if label == target_object:
                         self.logger.record_value([np.array(
                             [tvec[0], tvec[1], tvec[2], elapsed_time, score, label]), ])
 
+                        msg = detection_msg_pb2.Detection()
+                        msg.x = tvec[0]
+                        msg.y = tvec[1]
+                        msg.z = tvec[2]
+                        msg.label = label
+                        msg.confidence = score
+                        serial_msg = msg.SerializeToString()
+                        self.socket.send(serial_msg)
+                        _ = self.socket.recv()
                 # Write resulting frame to output
                 output.write(frame)
 
@@ -115,13 +136,14 @@ class Detector:
             cam.release()
             self.logger.export_to_csv(self.LOGFILE)
 
+    # Single run of detection
     def find_objects(self, cam, object_detector, starting_time, target_object_name):
 
         object_detector = OBJ_DETECTION(self.WEIGHTS, self.object_classes)
 
         cam = RSCamera()
 
-        output = cv2.VideoWriter(self.VIDEOFILE, cv2.VideoWriter_fourcc(
+        output = cv2.VideoWriter(self.VIDEO_OUT_FILE, cv2.VideoWriter_fourcc(
             'M', 'J', 'P', 'G'), 10, (cam.width, cam.height))
 
         starting_time = time.time()
@@ -172,7 +194,9 @@ class Detector:
             frame = cv2.putText(frame, f'{label} P:({str(score)}) z: {str(self.truncate(tvec[2], 2))}', (
                 xmin, ymin), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 1, cv2.LINE_AA)
 
-            if label == self.OBJECT_LOG_NAME:
+            if label == target_object_name:
+                msg = detection_msg_pb2.Detection()
+
                 self.logger.record_value([np.array(
                     [tvec[0], tvec[1], tvec[2], elapsed_time, score, label]), ])
                 return frame, tvec, elapsed_time, score
@@ -180,4 +204,4 @@ class Detector:
 
 if __name__ == '__main__':
     det = Detector('weights/yolov5s.pt')
-    det.detect_objects_cont()
+    det.detect_objects_cont("person")
