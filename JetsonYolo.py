@@ -73,7 +73,7 @@ class Detector:
 
         try:
             while True:
-
+                # To sync the frame capture with the motion capture data, we only capture frames when receiving something
                 frame, depth_frame = cam.get_rs_color_aligned_frames()
 
                 # We aligh depth to color, so we should use the color frame intrinsics
@@ -86,17 +86,22 @@ class Detector:
                     depth_frame.get_data())
 
                 # Detection every 5 frames, otherwise tracking
-                perform_detection = frame_counter % 5 == 0
+                # perform_detection = frame_counter % 5 == 0
+                perform_detection = True
                 if perform_detection:
+                    print("YOLO DETECTION")
                     objs = object_detector.detect(frame)
                     mtracker = cv2.legacy.MultiTracker_create()
                     for obj in objs:
                         [(xmin, ymin), (xmax, ymax)] = obj['bbox']
                         w = xmax - xmin
                         h = ymax - ymax
+                        # mtracker.add(cv2.legacy.TrackerMedianFlow_create(),
+                        #              frame, (xmin, ymin, w, h))
                         mtracker.add(cv2.legacy.TrackerMedianFlow_create(),
                                      frame, (xmin, ymin, w, h))
                 else:
+                    print("MTRACKER TRACKING")
                     is_tracking, bboxes = mtracker.update(frame)
                     if is_tracking:
                         for i, bbox in enumerate(bboxes):
@@ -107,7 +112,7 @@ class Detector:
 
                 # plotting
                 for obj in objs:
-                    # print(obj)
+                    print(obj)
                     label = obj['label']
                     score = obj['score']
                     [(xmin, ymin), (xmax, ymax)] = obj['bbox']
@@ -121,7 +126,7 @@ class Detector:
                         center_x)].astype(float)
                     distance = depth * cam.depth_scale
 
-                    print(label + ' ' + str(self.truncate(distance, 2)) + 'm')
+                    #print(label + ' ' + str(self.truncate(distance, 2)) + 'm')
 
                     # Get translation vector relative to the camera frame
                     tvec = cam.deproject(
@@ -146,17 +151,18 @@ class Detector:
                         msg.z = tvec[2]
                         msg.label = label
                         msg.confidence = score
-                        # serial_msg = msg.SerializeToString()
-                        # # We send in a req, rep scheme, so we have to send and then get a reply
-                        # self.socket.send(serial_msg)
-                        # _ = self.socket.recv()
+                        serial_msg = msg.SerializeToString()
 
                 # Write resulting frame to output
                 output.write(frame)
-
+                time.sleep(1)
                 elapsed_time = time.time() - starting_time
                 frame_counter += 1
                 # fps = frame_counter/elapsed_time
+
+                print(frame_counter/elapsed_time)
+                # self.socket.send(serial_msg)
+                # _ = self.socket.recv()
 
         except KeyboardInterrupt as e:
             output.release()
