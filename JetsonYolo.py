@@ -84,6 +84,7 @@ class Detector:
                 elapsed_time = time.time() - starting_time
                 frame_counter += 1
                 # fps = frame_counter/elapsed_time
+                print(frame_counter/elapsed_time)
 
                 # plotting
                 for obj in objs:
