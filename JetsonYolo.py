@@ -91,15 +91,15 @@ class Detector:
                 if perform_detection:
                     print("YOLO DETECTION")
                     objs = object_detector.detect(frame)
-                    mtracker = cv2.legacy.MultiTracker_create()
-                    for obj in objs:
-                        [(xmin, ymin), (xmax, ymax)] = obj['bbox']
-                        w = xmax - xmin
-                        h = ymax - ymax
-                        # mtracker.add(cv2.legacy.TrackerMedianFlow_create(),
-                        #              frame, (xmin, ymin, w, h))
-                        mtracker.add(cv2.legacy.TrackerMedianFlow_create(),
-                                     frame, (xmin, ymin, w, h))
+                    # mtracker = cv2.legacy.MultiTracker_create()
+                    # for obj in objs:
+                    #     [(xmin, ymin), (xmax, ymax)] = obj['bbox']
+                    #     center_x = (xmax - xmin)/2 + xmin
+                    #     center_y = (ymax - ymax)/2 + ymin
+                    #     # mtracker.add(cv2.legacy.TrackerMedianFlow_create(),
+                    #     #              frame, (xmin, ymin, w, h))
+                    #     mtracker.add(cv2.legacy.TrackerMedianFlow_create(),
+                    #                  frame, (center_x, center_y, 20, 20))
                 else:
                     print("MTRACKER TRACKING")
                     is_tracking, bboxes = mtracker.update(frame)
