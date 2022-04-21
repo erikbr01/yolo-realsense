@@ -8,7 +8,6 @@ from classes import coco
 import math
 import zmq
 import detection_msg_pb2
-import google.protobuf
 
 
 class Detector:
