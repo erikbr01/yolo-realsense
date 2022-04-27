@@ -86,20 +86,20 @@ class Detector:
                     depth_frame.get_data())
 
                 # Detection every 5 frames, otherwise tracking
-                # perform_detection = frame_counter % 5 == 0
-                perform_detection = True
+                perform_detection = frame_counter % 5 == 0
+                # perform_detection = True
                 if perform_detection:
                     print("YOLO DETECTION")
                     objs = object_detector.detect(frame)
-                    # mtracker = cv2.legacy.MultiTracker_create()
-                    # for obj in objs:
-                    #     [(xmin, ymin), (xmax, ymax)] = obj['bbox']
-                    #     center_x = (xmax - xmin)/2 + xmin
-                    #     center_y = (ymax - ymax)/2 + ymin
-                    #     # mtracker.add(cv2.legacy.TrackerMedianFlow_create(),
-                    #     #              frame, (xmin, ymin, w, h))
-                    #     mtracker.add(cv2.legacy.TrackerMedianFlow_create(),
-                    #                  frame, (center_x, center_y, 20, 20))
+                    mtracker = cv2.legacy.MultiTracker_create()
+                    for obj in objs:
+                        [(xmin, ymin), (xmax, ymax)] = obj['bbox']
+                        center_x = (xmax - xmin)/2 + xmin - 10
+                        center_y = (ymax - ymax)/2 + ymin - 10
+                        # mtracker.add(cv2.legacy.TrackerMedianFlow_create(),
+                        #              frame, (xmin, ymin, w, h))
+                        mtracker.add(cv2.legacy.TrackerMedianFlow_create(),
+                                     frame, (center_x, center_y, 20, 20))
                 else:
                     print("MTRACKER TRACKING")
                     is_tracking, bboxes = mtracker.update(frame)
@@ -151,18 +151,11 @@ class Detector:
                         msg.z = tvec[2]
                         msg.label = label
                         msg.confidence = score
-                        serial_msg = msg.SerializeToString()
 
                 # Write resulting frame to output
                 output.write(frame)
-                time.sleep(1)
-                elapsed_time = time.time() - starting_time
                 frame_counter += 1
-                # fps = frame_counter/elapsed_time
-
-                print(frame_counter/elapsed_time)
-                # self.socket.send(serial_msg)
-                # _ = self.socket.recv()
+                elapsed_time = time.time() - starting_time
 
         except KeyboardInterrupt as e:
             output.release()
