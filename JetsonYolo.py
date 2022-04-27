@@ -95,7 +95,7 @@ class Detector:
                     for obj in objs:
                         [(xmin, ymin), (xmax, ymax)] = obj['bbox']
                         center_x = (xmax - xmin)/2 + xmin - 10
-                        center_y = (ymax - ymax)/2 + ymin - 10
+                        center_y = (ymax - ymin)/2 + ymin - 10
                         # mtracker.add(cv2.legacy.TrackerMedianFlow_create(),
                         #              frame, (xmin, ymin, w, h))
                         mtracker.add(cv2.legacy.TrackerMedianFlow_create(),
