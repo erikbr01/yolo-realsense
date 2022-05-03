@@ -21,6 +21,8 @@ class DataAnalyzer:
         for i in range(1, len(timestamps)):
             if timestamps[i] - timestamps[i-1] != 0:
                 fps.append(1/(timestamps[i] - timestamps[i-1]))
+            else:
+                fps.append(fps[i-1])
 
         self.df.insert(len(self.df.columns), 'fps', fps)
 
@@ -35,6 +37,7 @@ class DataAnalyzer:
         plt.scatter(timesteps, fps, c='blue')
         ax.set_xlabel('frames')
         ax.set_ylabel('fps [1/s]')
+        print(np.average(fps))
         plt.show()
 
     def visualize_axis_raw(self, axis):
@@ -117,8 +120,8 @@ class DataAnalyzer:
 
 if __name__ == '__main__':
     vis = DataAnalyzer(
-        'logs/person_deprojected_3.csv', (480, 640))
+        'logs/testing_78.csv', (480, 640))
     # vis.add_fps_to_df()
-    # vis.visualize_fps_raw()
-    vis.visualize_3d_meters()
-    # vis.visualize_axis_raw('y')
+    vis.visualize_fps_raw()
+    # vis.visualize_3d_meters()
+    # vis.visualize_axis_raw('z')
