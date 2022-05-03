@@ -8,10 +8,11 @@ from classes import coco
 import math
 import zmq
 import detection_msg_pb2
+from tracking_object import TrackingObject
 
-OBJ_THRESH = .6
-P_THRESH = .3
-NMS_THRESH = .5
+lk_params = dict(winSize=(15, 15),
+                 maxLevel=2,
+                 criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
 
 
 class Detector:
@@ -85,32 +86,44 @@ class Detector:
                 depth_frame = np.asanyarray(
                     depth_frame.get_data())
 
+                # Frame in grayscale for tracking
+                frame_gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+
                 # Detection every 5 frames, otherwise tracking
                 perform_detection = frame_counter % 5 == 0
                 # perform_detection = True
                 if perform_detection:
                     print("YOLO DETECTION")
                     objs = object_detector.detect(frame)
-                    mtracker = cv2.legacy.MultiTracker_create()
+                    tracking_objects = []
+
                     for obj in objs:
-                        [(xmin, ymin), (xmax, ymax)] = obj['bbox']
-                        center_x = (xmax - xmin)/2 + xmin - 10
-                        center_y = (ymax - ymin)/2 + ymin - 10
-                        # mtracker.add(cv2.legacy.TrackerMedianFlow_create(),
-                        #              frame, (xmin, ymin, w, h))
-                        mtracker.add(cv2.legacy.TrackerMedianFlow_create(),
-                                     frame, (center_x, center_y, 20, 20))
+                        # Get bounding box coordinates
+                        (xmin, ymin), (xmax, ymax) = obj['bbox']
+
+                        # Create mask for bounding box area
+                        bbox_mask = np.zeros(frame_gray.shape, dtype='uint8')
+                        cv2.rectangle(bbox_mask, (xmin, ymin),
+                                      (xmax, ymax), 255, -1)
+
+                        # Get points to track on this object
+                        tracking_points = cv2.goodFeaturesToTrack(
+                            frame_gray, mask=bbox_mask)
+                        tracking_objects.append(
+                            TrackingObject(obj['bbox'], tracking_points))
+
                 else:
                     print("MTRACKER TRACKING")
-                    is_tracking, bboxes = mtracker.update(frame)
-                    if is_tracking:
-                        for i, bbox in enumerate(bboxes):
-                            xmin, ymin, w, h = [int(val) for val in bbox]
-                            xmax = xmin + w
-                            ymax = ymin + h
-                            objs[i]['bbox'] = [(xmin, ymin), (xmax, ymax)]
+                    i = 0
+                    for tr_obj in tracking_objects:
+                        old_points = tr_obj.points
+                        new_points, status, err = cv2.calcOpticalFlowPyrLK(
+                            old_frame_gray, frame_gray, old_points, None, **lk_params)
 
-                # plotting
+                        new_bbox = tr_obj.update_bbox(new_points, status)
+                        objs[i]['bbox'] = new_bbox
+
+                # localizing in 3D and plotting
                 for obj in objs:
                     print(obj)
                     label = obj['label']
@@ -152,6 +165,7 @@ class Detector:
                         msg.label = label
                         msg.confidence = score
 
+                old_frame_gray = frame_gray
                 # Write resulting frame to output
                 output.write(frame)
                 frame_counter += 1
