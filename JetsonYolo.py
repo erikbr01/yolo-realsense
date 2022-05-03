@@ -93,6 +93,7 @@ class Detector:
                 perform_detection = frame_counter % 5 == 0
                 # perform_detection = True
                 if perform_detection:
+                    tracking_objects.clear()
                     print("YOLO DETECTION")
                     objs = object_detector.detect(frame)
                     tracking_objects = []
