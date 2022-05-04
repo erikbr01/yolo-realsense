@@ -107,6 +107,9 @@ class Detector:
                     for obj in objs:
                         # Get bounding box coordinates
                         (xmin, ymin), (xmax, ymax) = obj['bbox']
+                        label = obj['label']
+                        color = self.object_colors[self.object_classes.index(
+                            label)]
 
                         # Create mask for bounding box area
                         bbox_mask = np.zeros(frame_gray.shape, dtype='uint8')
@@ -119,17 +122,31 @@ class Detector:
                         tracking_objects.append(
                             TrackingObject(obj['bbox'], tracking_points))
 
+                        # Visualisation
+                        for pt in tracking_points:
+                            x, y = pt.ravel()
+                            frame = cv2.circle(
+                                frame, (int(x), int(y)), 5, color, -1)
+
                 else:
                     print("MTRACKER TRACKING")
-                    i = 0
-                    for tr_obj in tracking_objects:
+
+                    for i, tr_obj in enumerate(tracking_objects):
                         old_points = tr_obj.points
                         new_points, status, err = cv2.calcOpticalFlowPyrLK(
                             old_frame_gray, frame_gray, old_points, None, **lk_params)
 
                         new_bbox = tr_obj.update_bbox(new_points, status)
                         objs[i]['bbox'] = new_bbox
-                        i += 1
+
+                        # Visualisation
+                        label = objs[i]['label']
+                        color = self.object_colors[self.object_classes.index(
+                            label)]
+                        for pt in new_points:
+                            x, y = pt.ravel()
+                            frame = cv2.circle(
+                                frame, (int(x), int(y)), 5, color, -1)
 
                 # localizing in 3D and plotting
                 for obj in objs:
