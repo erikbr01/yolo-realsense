@@ -14,6 +14,11 @@ lk_params = dict(winSize=(15, 15),
                  maxLevel=2,
                  criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
 
+feature_params = dict(maxCorners=20,
+                      qualityLevel=0.3,
+                      minDistance=7,
+                      blockSize=7)
+
 
 class Detector:
     def __init__(self, weight_file) -> None:
@@ -71,6 +76,7 @@ class Detector:
         starting_time = time.time()
         frame_counter = 0
         elapsed_time = 0
+        tracking_objects = []
 
         try:
             while True:
@@ -90,7 +96,7 @@ class Detector:
                 frame_gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
 
                 # Detection every 5 frames, otherwise tracking
-                perform_detection = frame_counter % 5 == 0
+                perform_detection = frame_counter % 10 == 0
                 # perform_detection = True
                 if perform_detection:
                     tracking_objects.clear()
@@ -109,7 +115,7 @@ class Detector:
 
                         # Get points to track on this object
                         tracking_points = cv2.goodFeaturesToTrack(
-                            frame_gray, mask=bbox_mask)
+                            frame_gray, mask=bbox_mask, **feature_params)
                         tracking_objects.append(
                             TrackingObject(obj['bbox'], tracking_points))
 
@@ -123,6 +129,7 @@ class Detector:
 
                         new_bbox = tr_obj.update_bbox(new_points, status)
                         objs[i]['bbox'] = new_bbox
+                        i += 1
 
                 # localizing in 3D and plotting
                 for obj in objs:
