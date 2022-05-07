@@ -82,7 +82,7 @@ class Detector:
             while True:
                 # To sync the frame capture with the motion capture data, we only capture frames when receiving something
                 frame, depth_frame = cam.get_rs_color_aligned_frames()
-
+                depth_colormap = cam.colorize_frame(depth_frame)
                 # We aligh depth to color, so we should use the color frame intrinsics
                 cam_intrinsics = frame.profile.as_video_stream_profile().intrinsics
 
@@ -110,6 +110,21 @@ class Detector:
                         label = obj['label']
                         color = self.object_colors[self.object_classes.index(
                             label)]
+
+                        fgModel = np.zeros((1, 65), dtype="float")
+                        bgModel = np.zeros((1, 65), dtype="float")
+                        bbox = (xmin, ymin, xmax, ymax)
+                        mask = np.zeros(frame_gray.shape, dtype="uint8")
+
+                        (mask, bgModel, fgModel) = cv2.grabCut(depth_colormap, mask, bbox, bgModel,
+                                                               fgModel, iterCount=10, mode=cv2.GC_INIT_WITH_RECT)
+                        outputMask = np.where((mask == cv2.GC_BGD) | (mask == cv2.GC_PR_BGD),
+                                              0, 1)
+                        outputMask = (outputMask * 255).astype("uint8")
+                        cv2.imwrite(
+                            f'pictures/depth_colormap_{frame_counter}_{self.RECORD_COUNTER}.png', depth_colormap)
+                        cv2.imwrite(
+                            f'pictures/{label}_{frame_counter}_{self.RECORD_COUNTER}.png', outputMask)
 
                         # Create mask for bounding box area
                         bbox_mask = np.zeros(frame_gray.shape, dtype='uint8')
