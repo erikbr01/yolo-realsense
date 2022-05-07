@@ -119,6 +119,12 @@ class Detector:
                         # Get points to track on this object
                         tracking_points = cv2.goodFeaturesToTrack(
                             frame_gray, mask=bbox_mask, **feature_params)
+
+                        # Try again if it returns none
+                        if tracking_points is None:
+                            tracking_points = cv2.goodFeaturesToTrack(
+                                frame_gray, mask=bbox_mask, **feature_params)
+
                         tracking_objects.append(
                             TrackingObject(obj['bbox'], tracking_points))
 

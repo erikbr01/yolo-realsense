@@ -1,5 +1,6 @@
 *.avi
 *.csv
 *.pyc
+*.png
 /__pycache__
 counter
