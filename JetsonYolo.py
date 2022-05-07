@@ -136,7 +136,8 @@ class Detector:
                         new_points, status, err = cv2.calcOpticalFlowPyrLK(
                             old_frame_gray, frame_gray, old_points, None, **lk_params)
 
-                        new_bbox = tr_obj.update_bbox(new_points, status)
+                        new_bbox = tr_obj.update_bbox(
+                            new_points, status, depth_frame, cam)
                         objs[i]['bbox'] = new_bbox
 
                         # Visualisation
