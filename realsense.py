@@ -64,6 +64,11 @@ class RSCamera:
 
         return (aligned_frames.get_color_frame(), aligned_frames.get_depth_frame())
 
+    def colorize_frame(self, depth_frame):
+        colorizer = rs.colorizer(color_scheme=0)
+        return np.asanyarray(
+            colorizer.colorize(depth_frame).get_data())
+
     def deproject(self, intrinsics, x, y, depth):
         return rs.rs2_deproject_pixel_to_point(intrinsics, [x, y], depth)
 

@@ -82,6 +82,8 @@ class Detector:
             while True:
                 # To sync the frame capture with the motion capture data, we only capture frames when receiving something
                 frame, depth_frame = cam.get_rs_color_aligned_frames()
+                # depth_colormap = cam.colorize_frame(depth_frame)
+                # cv2.imwrite('pictures/depth_frame_color.png', depth_colormap)
 
                 # We aligh depth to color, so we should use the color frame intrinsics
                 cam_intrinsics = frame.profile.as_video_stream_profile().intrinsics
@@ -95,14 +97,14 @@ class Detector:
                 # Frame in grayscale for tracking
                 frame_gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
 
-                # Detection every 5 frames, otherwise tracking
+                # Detection every x frames, otherwise tracking
                 perform_detection = frame_counter % 10 == 0
+                tracking_objects = []
                 # perform_detection = True
                 if perform_detection:
                     tracking_objects.clear()
                     print("YOLO DETECTION")
                     objs = object_detector.detect(frame)
-                    tracking_objects = []
 
                     for obj in objs:
                         # Get bounding box coordinates
@@ -135,7 +137,7 @@ class Detector:
                                 frame, (int(x), int(y)), 5, color, -1)
 
                 else:
-                    print("MTRACKER TRACKING")
+                    print("LK TRACKING")
 
                     for i, tr_obj in enumerate(tracking_objects):
                         old_points = tr_obj.points
@@ -200,6 +202,7 @@ class Detector:
                 old_frame_gray = frame_gray
                 # Write resulting frame to output
                 output.write(frame)
+                # cv2.imwrite('pictures/frame_color.png', frame)
                 frame_counter += 1
                 elapsed_time = time.time() - starting_time
 
