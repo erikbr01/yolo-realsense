@@ -99,7 +99,7 @@ class Detector:
 
                 # Detection every x frames, otherwise tracking
                 perform_detection = frame_counter % 10 == 0
-                tracking_objects = []
+
                 # perform_detection = True
                 if perform_detection:
                     tracking_objects.clear()
@@ -144,7 +144,7 @@ class Detector:
                         new_points, status, err = cv2.calcOpticalFlowPyrLK(
                             old_frame_gray, frame_gray, old_points, None, **lk_params)
 
-                        new_bbox = tr_obj.update_bbox(
+                        new_bbox, disc_points = tr_obj.update_bbox(
                             new_points, status, depth_frame, cam)
                         objs[i]['bbox'] = new_bbox
 
@@ -156,6 +156,10 @@ class Detector:
                             x, y = pt.ravel()
                             frame = cv2.circle(
                                 frame, (int(x), int(y)), 5, color, -1)
+                        print(disc_points)
+                        for pt in disc_points:
+                            frame = cv2.rectangle(
+                                frame, (pt[0] - 2, pt[1] - 2), (pt[0] + 2, pt[1] + 2), (0, 0, 255), 2)
 
                 # localizing in 3D and plotting
                 for obj in objs:

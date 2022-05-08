@@ -10,6 +10,7 @@ class TrackingObject:
     def update_bbox(self, new_points, status, depth_frame, cam):
         avg_x = 0
         avg_y = 0
+        discarded_points = []
         # avg_depth = self.compute_avg_depth(depth_frame, cam)
         (xmin, ymin), (xmax, ymax) = self.bbox
         center_x = (xmax - xmin)/2 + xmin
@@ -36,11 +37,12 @@ class TrackingObject:
                 depth = depth_frame[int(y_old), int(
                     x_old)].astype(float)
                 z = depth * cam.depth_scale
-                print(f'Depth is {z}, average depth is {avg_depth}')
-                print(f'Deviation is {z/avg_depth}')
+                # print(f'Depth is {z}, average depth is {avg_depth}')
+                # print(f'Deviation is {z/avg_depth}')
 
             if z >= 1.20 * avg_depth or z <= 0.80 * avg_depth:
-                print('point discarded------')
+                # print('point discarded------')
+                discarded_points.append([int(x_old), int(y_old)])
             elif avg_depth == 0 or z == 0:
                 avg_x += diff_x
                 avg_y += diff_y
@@ -53,7 +55,7 @@ class TrackingObject:
         if good_points != 0:
             avg_x = int(avg_x / good_points)
             avg_y = int(avg_y / good_points)
-        else:
+        elif len(good_old) != 0 and len(good_new) != 0:
             avg_x = int(avg_x / len(good_old))
             avg_y = int(avg_y / len(good_old))
 
@@ -61,7 +63,7 @@ class TrackingObject:
                     avg_y), (xmax + avg_x, ymax + avg_y)]
         self.bbox = new_bbox
         self.points = new_points
-        return self.bbox
+        return self.bbox, discarded_points
 
     def compute_avg_depth(self, depth_frame, cam):
         avg = 0
