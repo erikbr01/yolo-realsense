@@ -156,7 +156,7 @@ class Detector:
                             x, y = pt.ravel()
                             frame = cv2.circle(
                                 frame, (int(x), int(y)), 5, color, -1)
-                        print(disc_points)
+
                         for pt in disc_points:
                             frame = cv2.rectangle(
                                 frame, (pt[0] - 2, pt[1] - 2), (pt[0] + 2, pt[1] + 2), (0, 0, 255), 2)
