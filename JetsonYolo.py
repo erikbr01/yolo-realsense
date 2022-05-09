@@ -82,6 +82,8 @@ class Detector:
             while True:
                 # To sync the frame capture with the motion capture data, we only capture frames when receiving something
                 frame, depth_frame = cam.get_rs_color_aligned_frames()
+                # depth_colormap = cam.colorize_frame(depth_frame)
+                # cv2.imwrite('pictures/depth_frame_color.png', depth_colormap)
 
                 # We aligh depth to color, so we should use the color frame intrinsics
                 cam_intrinsics = frame.profile.as_video_stream_profile().intrinsics
@@ -95,14 +97,14 @@ class Detector:
                 # Frame in grayscale for tracking
                 frame_gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
 
-                # Detection every 5 frames, otherwise tracking
+                # Detection every x frames, otherwise tracking
                 perform_detection = frame_counter % 10 == 0
+
                 # perform_detection = True
                 if perform_detection:
                     tracking_objects.clear()
                     print("YOLO DETECTION")
                     objs = object_detector.detect(frame)
-                    tracking_objects = []
 
                     for obj in objs:
                         # Get bounding box coordinates
@@ -120,18 +122,23 @@ class Detector:
                         tracking_points = cv2.goodFeaturesToTrack(
                             frame_gray, mask=bbox_mask, **feature_params)
 
+                        # Try again if it returns none
+                        if tracking_points is None:
+                            tracking_points = cv2.goodFeaturesToTrack(
+                                frame_gray, mask=bbox_mask, **feature_params)
+
                         tracking_objects.append(
                             TrackingObject(obj['bbox'], tracking_points))
 
                 else:
-                    print("MTRACKER TRACKING")
+                    print("LK TRACKING")
 
                     for i, tr_obj in enumerate(tracking_objects):
                         old_points = tr_obj.points
                         new_points, status, err = cv2.calcOpticalFlowPyrLK(
                             old_frame_gray, frame_gray, old_points, None, **lk_params)
 
-                        new_bbox = tr_obj.update_bbox(
+                        new_bbox, disc_points = tr_obj.update_bbox(
                             new_points, status, depth_frame, cam)
                         objs[i]['bbox'] = new_bbox
 
@@ -143,6 +150,10 @@ class Detector:
                             x, y = pt.ravel()
                             frame = cv2.circle(
                                 frame, (int(x), int(y)), 5, color, -1)
+
+                        for pt in disc_points:
+                            frame = cv2.rectangle(
+                                frame, (pt[0] - 2, pt[1] - 2), (pt[0] + 2, pt[1] + 2), (0, 0, 255), 2)
 
                 # localizing in 3D and plotting
                 for obj in objs:
@@ -189,6 +200,7 @@ class Detector:
                 old_frame_gray = frame_gray
                 # Write resulting frame to output
                 output.write(frame)
+                # cv2.imwrite('pictures/frame_color.png', frame)
                 frame_counter += 1
                 elapsed_time = time.time() - starting_time
 
