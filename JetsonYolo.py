@@ -27,6 +27,7 @@ class Detector:
 
         self.LOGFILE = f"logs/{self.LOG_NAME}_{self.RECORD_COUNTER}.csv"
         self.VIDEO_OUT_FILE = f'videos/{self.LOG_NAME}_{self.RECORD_COUNTER}.avi'
+        self.VIDEO_OUT_DEPTH_FILE = f'videos/{self.LOG_NAME}_depth_{self.RECORD_COUNTER}.avi'
         self.WEIGHTS = weight_file
 
         self.ZMQ_SOCKET_ADDR = "tcp://localhost:5555"
@@ -73,6 +74,9 @@ class Detector:
         output = cv2.VideoWriter(self.VIDEO_OUT_FILE, cv2.VideoWriter_fourcc(
             'M', 'J', 'P', 'G'), 10, (cam.width, cam.height))
 
+        output_depth = cv2.VideoWriter(self.VIDEO_OUT_DEPTH_FILE, cv2.VideoWriter_fourcc(
+            'M', 'J', 'P', 'G'), 10, (cam.width, cam.height))
+
         starting_time = time.time()
         frame_counter = 0
         elapsed_time = 0
@@ -82,7 +86,8 @@ class Detector:
             while True:
                 # To sync the frame capture with the motion capture data, we only capture frames when receiving something
                 frame, depth_frame = cam.get_rs_color_aligned_frames()
-                # depth_colormap = cam.colorize_frame(depth_frame)
+                depth_colormap = cam.colorize_frame(depth_frame)
+                output_depth.write(depth_colormap)
                 # cv2.imwrite('pictures/depth_frame_color.png', depth_colormap)
 
                 # We aligh depth to color, so we should use the color frame intrinsics
