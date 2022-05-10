@@ -27,6 +27,8 @@ class Detector:
 
         self.LOGFILE = f"logs/{self.LOG_NAME}_{self.RECORD_COUNTER}.csv"
         self.VIDEO_OUT_FILE = f'videos/{self.LOG_NAME}_{self.RECORD_COUNTER}.avi'
+        self.VIDEO_OUT_DEPTH_FILE = f'videos/{self.LOG_NAME}_depth_{self.RECORD_COUNTER}.avi'
+        self.VIDEO_OUT_RAW_FILE = f'videos/{self.LOG_NAME}_raw_{self.RECORD_COUNTER}.avi'
         self.WEIGHTS = weight_file
 
         self.ZMQ_SOCKET_ADDR = "tcp://localhost:5555"
@@ -73,10 +75,17 @@ class Detector:
         output = cv2.VideoWriter(self.VIDEO_OUT_FILE, cv2.VideoWriter_fourcc(
             'M', 'J', 'P', 'G'), 10, (cam.width, cam.height))
 
+        output_depth = cv2.VideoWriter(self.VIDEO_OUT_DEPTH_FILE, cv2.VideoWriter_fourcc(
+            'M', 'J', 'P', 'G'), 10, (cam.width, cam.height))
+
+        output_raw = cv2.VideoWriter(self.VIDEO_OUT_RAW_FILE, cv2.VideoWriter_fourcc(
+            'M', 'J', 'P', 'G'), 10, (cam.width, cam.height))
+
         starting_time = time.time()
         frame_counter = 0
         elapsed_time = 0
         tracking_objects = []
+        serial_msg = None
 
         try:
             while True:
@@ -84,8 +93,8 @@ class Detector:
                 _ = self.socket.recv()
 
                 frame, depth_frame = cam.get_rs_color_aligned_frames()
-                # depth_colormap = cam.colorize_frame(depth_frame)
-                # cv2.imwrite('pictures/depth_frame_color.png', depth_colormap)
+                depth_colormap = cam.colorize_frame(depth_frame)
+                output_depth.write(depth_colormap)
 
                 # We aligh depth to color, so we should use the color frame intrinsics
                 cam_intrinsics = frame.profile.as_video_stream_profile().intrinsics
@@ -95,6 +104,8 @@ class Detector:
                     frame.get_data())
                 depth_frame = np.asanyarray(
                     depth_frame.get_data())
+
+                output_raw.write(frame)
 
                 # Frame in grayscale for tracking
                 frame_gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)

@@ -28,6 +28,7 @@ class TrackingObject:
 
         good_points = 0
         for (new, old) in zip(good_new, good_old):
+            z = 0
             x_new, y_new = new.ravel()
             x_old, y_old = old.ravel()
             diff_x = x_new - x_old
