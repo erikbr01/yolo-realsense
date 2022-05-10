@@ -40,7 +40,7 @@ class Detector:
 
         # Initalize ZMQ connection
         context = zmq.Context()
-        self.socket = context.socket(zmq.REQ)
+        self.socket = context.socket(zmq.REP)
         self.socket.connect(self.ZMQ_SOCKET_ADDR)
 
     def truncate(self, number, digits) -> float:
@@ -81,6 +81,8 @@ class Detector:
         try:
             while True:
                 # To sync the frame capture with the motion capture data, we only capture frames when receiving something
+                _ = self.socket.recv()
+
                 frame, depth_frame = cam.get_rs_color_aligned_frames()
                 # depth_colormap = cam.colorize_frame(depth_frame)
                 # cv2.imwrite('pictures/depth_frame_color.png', depth_colormap)
@@ -173,9 +175,13 @@ class Detector:
                     center_x = (xmax - xmin)/2 + xmin
                     center_y = (ymax - ymin)/2 + ymin
 
-                    depth = depth_frame[int(center_y), int(
-                        center_x)].astype(float)
-                    distance = depth * cam.depth_scale
+                    if center_y < cam.height and center_x < cam.width:
+                        depth = depth_frame[int(center_y), int(
+                            center_x)].astype(float)
+                        distance = depth * cam.depth_scale
+                    else:
+                        # No valid distance found
+                        distance = 0.0
 
                     #print(label + ' ' + str(self.truncate(distance, 2)) + 'm')
 
@@ -202,10 +208,23 @@ class Detector:
                         msg.z = tvec[2]
                         msg.label = label
                         msg.confidence = score
+                        serial_msg = msg.SerializeToString()
 
                 old_frame_gray = frame_gray
                 # Write resulting frame to output
                 output.write(frame)
+                if serial_msg is not None:
+                    self.socket.send(serial_msg)
+                else:
+                    msg = detection_msg_pb2.Detection()
+                    msg.x = 0.0
+                    msg.y = 0.0
+                    msg.z = 0.0
+                    msg.label = 'Nothing'
+                    msg.confidence = 0.0
+                    serial_msg = msg.SerializeToString()
+                    self.socket.send(serial_msg)
+
                 # cv2.imwrite('pictures/frame_color.png', frame)
                 frame_counter += 1
                 elapsed_time = time.time() - starting_time
