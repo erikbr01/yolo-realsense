@@ -250,4 +250,4 @@ class Detector:
 
 if __name__ == '__main__':
     det = Detector('weights/yolov5s.pt')
-    det.detect_objects_cont("bottle")
+    det.detect_objects_cont("teddy bear")
