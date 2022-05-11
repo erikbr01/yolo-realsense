@@ -214,9 +214,11 @@ class Detector:
                             [tvec[0], tvec[1], tvec[2], elapsed_time, score, label]), ])
 
                         msg = detection_msg_pb2.Detection()
-                        msg.x = tvec[0]
-                        msg.y = tvec[1]
-                        msg.z = tvec[2]
+
+                        msg.x = tvec[2]
+                        msg.y = tvec[0]
+                        msg.z = tvec[1]
+
                         msg.label = label
                         msg.confidence = score
                         serial_msg = msg.SerializeToString()
@@ -248,4 +250,4 @@ class Detector:
 
 if __name__ == '__main__':
     det = Detector('weights/yolov5s.pt')
-    det.detect_objects_cont("person")
+    det.detect_objects_cont("bottle")
