@@ -9,6 +9,7 @@ import math
 import zmq
 import detection_msg_pb2
 from tracking_object import TrackingObject
+from frame_transformations import transform_frame_EulerXYZ
 
 lk_params = dict(winSize=(15, 15),
                  maxLevel=2,
@@ -18,7 +19,7 @@ feature_params = dict(maxCorners=20,
                       qualityLevel=0.3,
                       minDistance=7,
                       blockSize=7)
-
+SEND_OUTPUT = True
 
 class Detector:
     def __init__(self, weight_file) -> None:
@@ -90,7 +91,11 @@ class Detector:
         try:
             while True:
                 # To sync the frame capture with the motion capture data, we only capture frames when receiving something
-                _ = self.socket.recv()
+                if SEND_OUTPUT:
+                    quad_pose_serial = socket.recv()
+                    quad_pose = detection_msg_pb2.Detection()
+                    quad_pose.ParseFromString(quad_pose_serial)
+                    print(quad_pose)
 
                 frame, depth_frame = cam.get_rs_color_aligned_frames()
                 depth_colormap = cam.colorize_frame(depth_frame)
@@ -210,33 +215,36 @@ class Detector:
 
                     # Store log and send ZMQ message
                     if label == target_object:
-                        self.logger.record_value([np.array(
-                            [tvec[0], tvec[1], tvec[2], elapsed_time, score, label]), ])
-
                         msg = detection_msg_pb2.Detection()
-
+                        if SEND_OUTPUT:
+                            translation = [quad_pose.x(), quad_pose.y(), quad_pose.z()]
+                            rotation = [quad_pose.roll(), quad_pose.pitch(), quad_pose.yaw()]
+                            tvec = transform_frame_EulerXYZ(rotation, translation, tvec) 
                         msg.x = tvec[2]
                         msg.y = tvec[0]
                         msg.z = tvec[1]
-
                         msg.label = label
                         msg.confidence = score
                         serial_msg = msg.SerializeToString()
+                        self.logger.record_value([np.array(
+                            [tvec[0], tvec[1], tvec[2], elapsed_time, score, label]), ])
 
                 old_frame_gray = frame_gray
                 # Write resulting frame to output
                 output.write(frame)
-                if serial_msg is not None:
-                    self.socket.send(serial_msg)
-                else:
-                    msg = detection_msg_pb2.Detection()
-                    msg.x = 0.0
-                    msg.y = 0.0
-                    msg.z = 0.0
-                    msg.label = 'Nothing'
-                    msg.confidence = 0.0
-                    serial_msg = msg.SerializeToString()
-                    self.socket.send(serial_msg)
+                
+                if SEND_OUTPUT:
+                    if serial_msg is not None:
+                        self.socket.send(serial_msg)
+                    else:
+                        msg = detection_msg_pb2.Detection()
+                        msg.x = 0.0
+                        msg.y = 0.0
+                        msg.z = 0.0
+                        msg.label = 'Nothing'
+                        msg.confidence = 0.0
+                        serial_msg = msg.SerializeToString()
+                        self.socket.send(serial_msg)
 
                 # cv2.imwrite('pictures/frame_color.png', frame)
                 frame_counter += 1
@@ -250,4 +258,4 @@ class Detector:
 
 if __name__ == '__main__':
     det = Detector('weights/yolov5s.pt')
-    det.detect_objects_cont("teddy bear")
+    det.detect_objects_cont("person")
