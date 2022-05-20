@@ -120,7 +120,7 @@ class DataAnalyzer:
 
 if __name__ == '__main__':
     vis = DataAnalyzer(
-        'logs/testing_78.csv', (480, 640))
+        'logs/testing_9.csv', (480, 640))
     # vis.add_fps_to_df()
     vis.visualize_fps_raw()
     # vis.visualize_3d_meters()

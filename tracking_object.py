@@ -9,14 +9,15 @@ class TrackingObject:
         avg_x = 0
         avg_y = 0
         discarded_points = []
-        # avg_depth = self.compute_avg_depth(depth_frame, cam)
+        avg_depth = 0
         (xmin, ymin), (xmax, ymax) = self.bbox
         center_x = (xmax - xmin)/2 + xmin
         center_y = (ymax - ymin)/2 + ymin
 
-        d = depth_frame[int(center_y), int(
-            center_x)].astype(float)
-        avg_depth = d * cam.depth_scale
+        if center_y < cam.height and center_x < cam.width:
+            d = depth_frame[int(center_y), int(
+                center_x)].astype(float)
+            avg_depth = d * cam.depth_scale
 
         if new_points is not None:
             good_new = new_points[status == 1]
@@ -26,6 +27,7 @@ class TrackingObject:
 
         good_points = 0
         for (new, old) in zip(good_new, good_old):
+            z = 0
             x_new, y_new = new.ravel()
             x_old, y_old = old.ravel()
             diff_x = x_new - x_old
