@@ -150,12 +150,6 @@ class Detector:
                         tracking_objects.append(
                             TrackingObject(obj['bbox'], tracking_points))
 
-                        # Visualisation
-                        for pt in tracking_points:
-                            x, y = pt.ravel()
-                            frame = cv2.circle(
-                                frame, (int(x), int(y)), 5, color, -1)
-
                 else:
                     # print("LK TRACKING")
 

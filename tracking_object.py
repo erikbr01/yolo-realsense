@@ -1,11 +1,9 @@
 
-from matplotlib.transforms import Bbox
-
-
 class TrackingObject:
     def __init__(self, bbox, points):
         self.bbox = bbox
         self.points = points
+        self.avg_depth = 0
 
     def update_bbox(self, new_points, status, depth_frame, cam):
         avg_x = 0
