@@ -21,6 +21,7 @@ feature_params = dict(maxCorners=20,
                       blockSize=7)
 SEND_OUTPUT = True
 
+
 class Detector:
     def __init__(self, weight_file) -> None:
         self.RECORD_COUNTER = self.get_record_counter('counter')
@@ -92,9 +93,10 @@ class Detector:
             while True:
                 # To sync the frame capture with the motion capture data, we only capture frames when receiving something
                 if SEND_OUTPUT:
-                    quad_pose_serial = socket.recv()
+                    quad_pose_serial = self.socket.recv()
                     quad_pose = detection_msg_pb2.Detection()
                     quad_pose.ParseFromString(quad_pose_serial)
+                    print('Quad pose: -------')
                     print(quad_pose)
 
                 frame, depth_frame = cam.get_rs_color_aligned_frames()
@@ -121,7 +123,7 @@ class Detector:
                 # perform_detection = True
                 if perform_detection:
                     tracking_objects.clear()
-                    print("YOLO DETECTION")
+                    # print("YOLO DETECTION")
                     objs = object_detector.detect(frame)
 
                     for obj in objs:
@@ -155,7 +157,7 @@ class Detector:
                                 frame, (int(x), int(y)), 5, color, -1)
 
                 else:
-                    print("LK TRACKING")
+                    # print("LK TRACKING")
 
                     for i, tr_obj in enumerate(tracking_objects):
                         old_points = tr_obj.points
@@ -181,7 +183,7 @@ class Detector:
 
                 # localizing in 3D and plotting
                 for obj in objs:
-                    print(obj)
+                    # print(obj)
                     label = obj['label']
                     score = obj['score']
                     [(xmin, ymin), (xmax, ymax)] = obj['bbox']
@@ -217,12 +219,32 @@ class Detector:
                     if label == target_object:
                         msg = detection_msg_pb2.Detection()
                         if SEND_OUTPUT:
-                            translation = [quad_pose.x(), quad_pose.y(), quad_pose.z()]
-                            rotation = [quad_pose.roll(), quad_pose.pitch(), quad_pose.yaw()]
-                            tvec = transform_frame_EulerXYZ(rotation, translation, tvec) 
-                        msg.x = tvec[2]
-                        msg.y = tvec[0]
-                        msg.z = tvec[1]
+                            print('Object location as detected -----')
+                            print(tvec)
+
+                            translation = [
+                                quad_pose.x, quad_pose.y, quad_pose.z]
+                            rotation = [
+                                quad_pose.roll, quad_pose.pitch, quad_pose.yaw]
+
+                            print('Quad translation: -----')
+                            print(translation)
+                            print('Quad rotation: ----')
+                            print(rotation)
+
+                            tvec = [tvec[2], tvec[0], tvec[1]]
+
+                            print('Object location with mocap axis:')
+                            print(tvec)
+
+                            tvec = transform_frame_EulerXYZ(
+                                rotation, translation, tvec, degrees=False)
+                            print('Transformed object location: ----')
+                            print(tvec)
+
+                        msg.x = tvec[0]
+                        msg.y = tvec[1]
+                        msg.z = tvec[2]
                         msg.label = label
                         msg.confidence = score
                         serial_msg = msg.SerializeToString()
@@ -232,7 +254,7 @@ class Detector:
                 old_frame_gray = frame_gray
                 # Write resulting frame to output
                 output.write(frame)
-                
+
                 if SEND_OUTPUT:
                     if serial_msg is not None:
                         self.socket.send(serial_msg)
@@ -258,4 +280,4 @@ class Detector:
 
 if __name__ == '__main__':
     det = Detector('weights/yolov5s.pt')
-    det.detect_objects_cont("person")
+    det.detect_objects_cont("teddy bear")
