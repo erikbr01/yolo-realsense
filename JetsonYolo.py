@@ -10,6 +10,7 @@ import zmq
 import detection_msg_pb2
 from tracking_object import TrackingObject
 from frame_transformations import transform_frame_EulerXYZ
+from streamer import Streamer
 
 lk_params = dict(winSize=(15, 15),
                  maxLevel=2,
@@ -46,6 +47,9 @@ class Detector:
         context = zmq.Context()
         self.socket = context.socket(zmq.REP)
         self.socket.connect(self.ZMQ_SOCKET_ADDR)
+        self.streamer = Streamer()
+
+        print('Init complete')
 
     def truncate(self, number, digits) -> float:
         stepper = 10.0 ** digits
@@ -200,7 +204,7 @@ class Detector:
                     # Get translation vector relative to the camera frame
                     tvec = cam.deproject(
                         cam_intrinsics, center_x, center_y, distance)
-
+                    tvec[1] = -tvec[1]
                     # Create bounding box around object
                     frame = cv2.rectangle(
                         frame, (xmin, ymin), (xmax, ymax), color, 2)
@@ -219,7 +223,7 @@ class Detector:
                             translation = [
                                 quad_pose.x, quad_pose.y, quad_pose.z]
                             rotation = [
-                                quad_pose.roll, quad_pose.pitch, quad_pose.yaw]
+                                quad_pose.roll, -quad_pose.pitch, quad_pose.yaw]
 
                             print('Quad translation: -----')
                             print(translation)
@@ -248,6 +252,7 @@ class Detector:
                 old_frame_gray = frame_gray
                 # Write resulting frame to output
                 output.write(frame)
+                self.streamer.send_frames(frame, depth_colormap)
 
                 if SEND_OUTPUT:
                     if serial_msg is not None:
